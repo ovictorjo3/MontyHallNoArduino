@@ -1,5 +1,5 @@
-const int botoes[3] = {10, 9, 8};
-const int leds[3] = {13, 12, 11};
+const int botoes[3] = {8, 9, 10};
+const int leds[3] = {11, 12, 13};
 const int buzzer = 7;
 
 void setup() {
@@ -122,3 +122,4 @@ void loop() {
     }
   }
 }
+

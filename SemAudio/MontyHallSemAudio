@@ -1,0 +1,115 @@
+import serial
+import time
+import random
+import os
+
+porta_serial = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+time.sleep(2)  # tempo para o Arduino iniciar a comunicação
+
+def falar(texto):
+    print(texto)
+
+def enviar(comando):
+    porta_serial.write((comando + '\n').encode())
+
+def esperar_botao():
+    while True:
+        if porta_serial.in_waiting:
+            dado = porta_serial.readline().decode(errors='ignore').strip()
+            if dado.startswith("botao "):
+                try:
+                    return int(dado.split(" ")[1])
+                except:
+                    pass
+
+def buzzer_tocar(vezes=1, duracao=3, intervalo=0.5):
+    for _ in range(vezes):
+        enviar("buzzer_on")
+        time.sleep(duracao)
+        enviar("buzzer_off")
+        time.sleep(intervalo)
+
+def piscar_leds(portas, tempo_total=5, intervalo=0.5):
+    fim = time.time() + tempo_total
+    ligado = False
+    while time.time() < fim:
+        estado = "ON" if ligado else "OFF"
+        for p in portas:
+            enviar(f"led{p}_{estado}")
+        ligado = not ligado
+        time.sleep(intervalo)
+    # Após piscar, manter ligados
+    for p in portas:
+        enviar(f"led{p}_ON")
+
+# --- Início do jogo ---
+
+falar("Olá! Qual o seu nome?")
+nome = input("Digite seu nome: ")
+falar(f"Bem-vindo, {nome}! Vamos jogar Monty Hall.")
+
+premiada = random.randint(1, 3)
+print(f"DEBUG: Porta premiada = {premiada}")
+
+# 1. Escolha inicial
+falar("Escolha uma porta. Pressione o botão 1, 2 ou 3.")
+escolha = esperar_botao()
+falar(f"Você escolheu a porta {escolha}.")
+enviar(f"led{escolha}_ON")  # acende led da porta escolhida
+buzzer_tocar(vezes=1, duracao=3)
+
+# 2. Abrir porta vazia (não premiada e nem escolhida)
+portas = [1, 2, 3]
+possiveis_abertas = [p for p in portas if p != escolha and p != premiada]
+porta_aberta = random.choice(possiveis_abertas)
+falar(f"Abrindo a porta {porta_aberta}. Ela está vazia.")
+
+# Apaga LED da porta vazia (porta_aberta)
+enviar(f"led{porta_aberta}_OFF")
+
+# Acende apenas os LEDs das outras duas portas
+outras_duas = [p for p in portas if p != porta_aberta]
+for p in outras_duas:
+    time.sleep(1)
+    enviar(f"led{p}_ON")
+
+# 3. Pergunta se quer trocar
+falar(f"Para manter sua escolha, aperte o botão da porta {escolha}.")
+troca_possivel = [p for p in portas if p != escolha and p != porta_aberta][0]
+falar(f"Para trocar, aperte o botão da porta {troca_possivel}.")
+
+while True:
+    decisao = esperar_botao()
+    if decisao == escolha:
+        escolha_final = escolha
+        falar(f"Você manteve a porta {escolha}.")
+        break
+    elif decisao == troca_possivel:
+        escolha_final = troca_possivel
+        falar(f"Você trocou para a porta {escolha_final}.")
+        break
+
+
+# 5. Piscar LEDs das duas portas restantes (excluindo a porta aberta)
+piscar_leds([p for p in portas if p != porta_aberta])
+
+# 6. Revela a porta premiada
+for p in portas:
+    enviar(f"led{p}_OFF")
+enviar(f"led{premiada}_ON")
+
+# 7. Resultado e buzzer
+if escolha_final == premiada:
+    falar(f"Parabéns, {nome}! Você ganhou! O prêmio estava na porta {premiada}.")
+    buzzer_tocar(vezes=1, duracao=3)
+else:
+    falar(f"Que pena, {nome}. Você perdeu. O prêmio estava na porta {premiada}.")
+    buzzer_tocar(vezes=2, duracao=2, intervalo=0.2)
+
+# 8. Apaga todos os LEDs e encerra
+time.sleep(1)
+for p in portas:
+    enviar(f"led{p}_OFF")
+
+porta_serial.close()
+os.system("clear")

@@ -26,20 +26,19 @@ def esperar_botao():
 
 falar("Olá! Qual o seu nome?")
 nome = input("Digite seu nome: ")
-falar(f"Bem-vindo, {nome}! Vamos jogar Monty Hall.")
+falar("Bem-vindo, {}! Vamos jogar Monty Hall.".format(nome))
 
 premiada = random.randint(1, 3)
 print(premiada)
-
 # 1. Escolha inicial
 falar("Escolha uma porta. Pressione o botão 1, 2 ou 3.")
 escolha = esperar_botao()
-falar(f"Você escolheu a porta {escolha}.")
-enviar(f"escolha {escolha}")
+falar("Você escolheu a porta {}.".format(escolha))
+enviar("escolha {}".format(escolha))
 
 # Buzzer curto e agradável (1.5s)
-enviar("buzzer_on 1500")
-time.sleep(0.5)
+enviar("buzzer_on 1300")
+time.sleep(0.3)
 
 # 2. Abrir porta vazia (não acende LED dela)
 portas = [1, 2, 3]
@@ -48,59 +47,59 @@ porta_aberta = random.choice(restantes)
 
 # Acende as duas portas restantes (não a aberta)
 outras_duas = [p for p in portas if p != porta_aberta]
-enviar(f"duas_ligadas {outras_duas[0]-1},{outras_duas[1]-1}")
+enviar("duas_ligadas {},{}".format(outras_duas[0]-1,outras_duas[1]-1 ))
 
-falar(f"Abrindo a porta {porta_aberta}. Ela está vazia.")
+falar("Abrindo a porta {}. Ela está vazia.".format(porta_aberta))
 
 # 3. Pergunta se quer trocar
-falar(f"Para manter sua escolha, aperte o botão da porta {escolha}.")
+falar("Para manter sua escolha, aperte o botão da porta {}.".format(escolha))
 troca_possivel = [p for p in portas if p != escolha and p != porta_aberta]
-falar(f"Para trocar, aperte o botão da porta {troca_possivel[0]}.")
+falar("Para trocar, aperte o botão da porta {}.".format(troca_possivel[0]))
 
 while True:
     decisao = esperar_botao()
     if decisao == escolha:
         escolha_final = escolha
-        falar(f"Você manteve a porta {escolha}.")
+        falar("Você manteve a porta {}.".format(escolha))
         break
     elif decisao == troca_possivel[0]:
         escolha_final = troca_possivel[0]
-        falar(f"Você trocou para a porta {escolha_final}.")
+        falar("Você trocou para a porta {}.".format(escolha_final))
         break
 
 # 4. Piscar LEDs restantes (excluindo a porta aberta)
 piscar_leds = [p-1 for p in portas if p != porta_aberta]
-enviar(f"piscar {piscar_leds[0]},{piscar_leds[1]} 500 10")
+enviar("piscar {},{} 500 10".format(piscar_leds[0], piscar_leds[1]))
 time.sleep(1)
 
 # 5. Revelar porta premiada
-enviar(f"escolha {premiada}")
-falar("O prêmio está na porta...")
-time.sleep(2)
+enviar("escolha {}".format(premiada))
+#falar("O prêmio está na porta...")
+time.sleep(1.5)
 
 # 6. Resultado
 if escolha_final == premiada:
-    falar(f"Parabéns, {nome}! Você ganhou!")
-    falar(f"O prêmio estava na porta {premiada}.")
-    enviar(f"escolha {premiada}")
+    falar("Parabéns, {}! Você ganhou!".format(nome))
+    falar("O prêmio estava na porta {}.".format(premiada))
+    enviar("escolha {}".format(premiada))
     enviar("buzzer_on 1500")
 else:
     erradas = [p for p in portas if p != premiada and p != porta_aberta]
     if len(erradas) == 2:
-        enviar(f"duas_ligadas {erradas[0]-1},{erradas[1]-1}")
+        enviar("duas_ligadas {},{}".format(erradas[0]-1, erradas[1]-1))
     elif len(erradas) == 1:
-        enviar(f"escolha {erradas[0]-1}")
+        enviar("escolha {}".format(erradas[0]-1))
     # se erradas estiver vazia, não acende nada
 
-    falar(f"Que pena, {nome}. O prêmio não estava na porta {escolha_final}.")
-    time.sleep(1)
-    enviar(f"escolha {premiada}")
-    falar(f"O prêmio estava na porta {premiada}.")
+    falar("Que pena, {}. O prêmio não estava na porta {}.".format(nome, escolha_final))
+    time.sleep(0.5)
+    enviar("escolha {}".format(premiada))
+    falar("O prêmio estava na porta {}.".format(premiada))
     enviar("errou")
 
-# 7. Final: apagar todos os LEDs após 2 segundos
-time.sleep(2)
+# 7. Final: apagar todos os LEDs após 1 segundos
+time.sleep(1)
 enviar("duas_ligadas -1,-1")
-
+os.system("clear")
 porta_serial.close()
 
